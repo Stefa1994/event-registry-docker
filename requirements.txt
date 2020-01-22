@@ -1,0 +1,17 @@
+argparse
+#os_sys
+#sys
+configparser
+regex
+setuptools
+tokenizer
+cython
+#pywin32>=223
+Pyinstaller==3.2.1 
+cymem<2.1.0,>=2.0.2
+murmurhash<1.1.0,>=0.28.0
+thinc<7.2.0,>=7.1.1
+preshed<3.1.0,>=3.0.2
+pprintpp
+eventregistry
+python-arango
