@@ -1,0 +1,6 @@
+version: '3'
+services:
+  entry_registry:
+    build: .
+    volumes:
+      - .:/code

@@ -1,6 +1,4 @@
 argparse
-#os_sys
-#sys
 configparser
 regex
 setuptools

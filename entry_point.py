@@ -78,16 +78,16 @@ def coll_service_selection(avail_coll_services):
     """
     Let the user choose the service to which perform the query
     """
-    print("Please, select collector service (type related number key):")
+    #print("Please, select collector service (type related number key):")
 
-    for coll_serv_key in avail_coll_services:
+    #for coll_serv_key in avail_coll_services:
         #print("[" + coll_serv_key + "] " + avail_coll_services[coll_serv_key]["name"]) # fare a dizionario e fare check sulle chiavi disponibili
-        print(coll_serv_key)
+        #print(coll_serv_key)
     coll_valid = False
     selected_collector = ""
 
     while not coll_valid:
-        print("Your selection:", end=" ")
+        #print("Your selection:", end=" ")
         selected_collector = '1' # Solo event registry
         if selected_collector not in avail_coll_services:
             print("[Error] Your choice does not correspond to any of the available services, retry")
@@ -112,8 +112,8 @@ def collect_from_service(selected_collector):
 
     # ER query filtering
     filters = {}
-    print("\nSpecify filtering, leave blank if you do not want set a filter")
-    print("Location:", end=" ")
+    #print("\nSpecify filtering, leave blank if you do not want set a filter")
+    #print("Location:", end=" ")
 
     # Filter location
     #filters["location"] = input()
@@ -125,7 +125,7 @@ def collect_from_service(selected_collector):
 
     # TODO: IMPORTANT! Add dateStart and dateEnd
     while not (date_start_valid & date_end_valid):
-        print("Event start date (yyyy-MM-dd):", end=" ")
+        #print("Event start date (yyyy-MM-dd):", end=" ")
         filters["startDate"] = dateStart.inizio
 
         pattern_date = re.compile("(^$|^\d{4}(-)(((0)[0-9])|((1)[0-2]))(-)([0-2][0-9]|(3)[0-1])$)")
@@ -137,7 +137,7 @@ def collect_from_service(selected_collector):
             print("[ERROR] Input date invalid or format not recognized")
 
 
-        print("Event end date (yyyy-MM-dd):", end=" ")
+        #print("Event end date (yyyy-MM-dd):", end=" ")
         filters["endDate"] = dateEnd.fine
 
         match_end_date = pattern_date.match(filters["endDate"])
@@ -158,16 +158,16 @@ def conn_db_selection(avail_db_conn):
     Let the user choose the db connector to interface with db engine
     """
 
-    print("Please, select collector service (type related number key):")
+    #print("Please, select collector service (type related number key):")
 
-    for conn_db_key in avail_db_conn:
-        print("[" + conn_db_key + "] " + avail_db_conn[conn_db_key]["name"]) # fare a dizionario e fare check sulle chiavi disponibili
+    #for conn_db_key in avail_db_conn:
+        #print("[" + conn_db_key + "] " + avail_db_conn[conn_db_key]["name"]) # fare a dizionario e fare check sulle chiavi disponibili
 
     conn_db_valid = False
     selected_conn_db = ""
 
     while not conn_db_valid:
-        print("Your selection:", end=" ")
+        #print("Your selection:", end=" ")
         selected_conn_db = input()
         if selected_conn_db not in avail_db_conn:
             print("[Error] Your choice does not correspond to any of the available connectors, retry")
@@ -220,32 +220,35 @@ def save_events(selected_db_conn):
     else:
         conn_table_coll_name = selected_db_conn["table_name"]
 
-    print(selected_db_conn["name"])
     conn_db = conn_db_cstr[selected_db_conn["name"]](conn_ip,conn_port,'http',conn_user,conn_password) # call the specified constructor
     db = conn_db.connect(conn_db_name,conn_table_coll_name)
     conn_db.save_all(db)
 
+
+# mode function
+def mode(cfg):
+    for section in cfg.sections():
+        if 'Mode' in section:
+            mode_d = cfg[section]['download']
+            mode_m = cfg[section]['mapping']
+    return mode_d, mode_m
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    # add argument to choose the mode: only events donwload, only mapping, both
-    parser.add_argument('-m','--mode', type=str, default='dm',
-        help="['d' download events | 'm' map events | 'dm' do both] (Default 'dm')")
-    args = parser.parse_args()
+
     # read config file
     cfg = configparser.ConfigParser()
     cfg.read('config/config.ini')
     luogo, dateEnd, dateStart = LocationDate(cfg)
-    print(luogo)
-    print(dateEnd)
-    print(dateStart)
-    if (args.mode == 'd') | (args.mode == 'dm'):
+    mode_download, mode_mapping = mode(cfg)
+
+    if (mode_download == 'enable'):
         # init available collector services
         avail_coll_services = get_avail_coll_services(cfg)
 
         selected_collector = coll_service_selection(avail_coll_services)
         collect_from_service(selected_collector)
 
-    if (args.mode == 'm') | (args.mode == 'dm'):
+    if (mode_mapping == 'enable'):
         map_to_jsonld()
 
         # init available db connectors
@@ -254,3 +257,6 @@ if __name__ == "__main__":
         selected_db_conn = conn_db_selection(avail_db_conn)
         pprint(selected_db_conn)
         save_events(selected_db_conn)
+
+    if (mode_mapping == 'disable') and (mode_download == 'disable'):
+        print("[Error] Plese, select one or both the mode (download/mapping)")
