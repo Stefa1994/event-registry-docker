@@ -97,7 +97,7 @@ def coll_service_selection(avail_coll_services):
     return avail_coll_services[selected_collector]
 
 # Events collection
-def collect_from_service(selected_collector):
+def collect_from_service(selected_collector, n_luoghi, n_date):
     """
     Query services to get events and collect results in a JSON file
     """
@@ -117,7 +117,7 @@ def collect_from_service(selected_collector):
 
     # Filter location
     #filters["location"] = input()
-    filters["location"] = luogo.place
+    filters["location"] = luogo.place[n_luoghi]
 
     # Filter event date
     date_start_valid = False
@@ -126,7 +126,7 @@ def collect_from_service(selected_collector):
     # TODO: IMPORTANT! Add dateStart and dateEnd
     while not (date_start_valid & date_end_valid):
         #print("Event start date (yyyy-MM-dd):", end=" ")
-        filters["startDate"] = dateStart.inizio
+        filters["startDate"] = dateStart.inizio[n_date]
 
         pattern_date = re.compile("(^$|^\d{4}(-)(((0)[0-9])|((1)[0-2]))(-)([0-2][0-9]|(3)[0-1])$)")
         match_start_date = pattern_date.match(filters["startDate"])
@@ -138,7 +138,7 @@ def collect_from_service(selected_collector):
 
 
         #print("Event end date (yyyy-MM-dd):", end=" ")
-        filters["endDate"] = dateEnd.fine
+        filters["endDate"] = dateEnd.fine[n_date]
 
         match_end_date = pattern_date.match(filters["endDate"])
 
@@ -189,13 +189,12 @@ def LocationDate(cfg):
     """
     read configuration file
     """
-
     for section in cfg.sections():
         if 'Location' in section:
-            luogo = Luogo(cfg[section]["location"])
+            luogo = Luogo(cfg.get(section, 'location').split('\n'))
         elif 'Date' in section:
-            dateStart = Start(cfg[section]["start_date"])
-            dateEnd = End(cfg[section]["end_date"])
+            dateStart = Start(cfg.get(section, 'start_date').split('\n'))
+            dateEnd = End(cfg.get(section, 'end_date').split('\n'))
     return luogo,dateEnd,dateStart
 
 # Save events into db
@@ -240,23 +239,24 @@ if __name__ == "__main__":
     cfg.read('config/config.ini')
     luogo, dateEnd, dateStart = LocationDate(cfg)
     mode_download, mode_mapping = mode(cfg)
-
-    if (mode_download == 'enable'):
+    for j in range(len(luogo.place)):
+        for i in range(len(dateStart.inizio)):
+            if (mode_download == 'enable'):
         # init available collector services
-        avail_coll_services = get_avail_coll_services(cfg)
+                avail_coll_services = get_avail_coll_services(cfg)
 
-        selected_collector = coll_service_selection(avail_coll_services)
-        collect_from_service(selected_collector)
-
-    if (mode_mapping == 'enable'):
-        map_to_jsonld()
+                selected_collector = coll_service_selection(avail_coll_services)
+                collect_from_service(selected_collector, j, i)
+                #print(i)
+            if (mode_mapping == 'enable'):
+                map_to_jsonld()
 
         # init available db connectors
-        avail_db_conn = get_avail_db_conn(cfg)
+                avail_db_conn = get_avail_db_conn(cfg)
 
-        selected_db_conn = conn_db_selection(avail_db_conn)
-        pprint(selected_db_conn)
-        save_events(selected_db_conn)
+                selected_db_conn = conn_db_selection(avail_db_conn)
+                pprint(selected_db_conn)
+                save_events(selected_db_conn)
 
-    if (mode_mapping == 'disable') and (mode_download == 'disable'):
-        print("[Error] Plese, select one or both the mode (download/mapping)")
+            if (mode_mapping == 'disable') and (mode_download == 'disable'):
+                print("[Error] Plese, select one or both the mode (download/mapping)")
